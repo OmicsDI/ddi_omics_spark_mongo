@@ -46,7 +46,7 @@ object SparkMongo {
 
     println(aggregatedRdd.toDF.printSchema())
 
-
+    //println("count of records is " + aggregatedRdd.count())
 
     aggregatedRdd.toDF()
 
@@ -88,7 +88,7 @@ object SparkMongo {
       .withColumn(Constants.flatCitationCountNormalized, functions.explode_outer($"citationCountNormalized"))
       .withColumn(Constants.flatDownloadCountNormalized, functions.explode_outer($"downloadCountNormalized"))
 
-    explodeDF.take(10).foreach(dt => println(dt))
+    //explodeDF.take(10).foreach(dt => println(dt))
 
     //println(explodeDF.count())
     //df.select($"_id", $"addresses"(0)("street"), $"country"("name"))
@@ -100,7 +100,9 @@ object SparkMongo {
 
     val finalDF = domainCount.drop("tempColumn", Constants.flatDomain, "searchDomain")
 
-    finalDF.printSchema()
+    //finalDF.printSchema()
+
+    println("count of records is " + finalDF.count())
 
     finalDF
   }
@@ -154,5 +156,10 @@ object SparkMongo {
     //MongoUpdates.normalize()
 
   }
+
+  /* def main(args: Array[String]): Unit = {
+      MongoUpdates.getCitationMaxMinValue()
+      //SparkMongo.normalizeMetrics(SparkMongo.getProcesseData(SparkMongo.getAggregateData))
+    }*/
 
 }
