@@ -22,7 +22,7 @@ object SparkMongo {
       //Document.parse("{ $match: { 'additional.search_domains' : { $exists :true } } }"),
       //Document.parse("{ $match: { 'database' : 'BioModels' } }"),
       //Document.parse("{ $match: { 'additional.download_count' : { $exists :true } } }"),
-      Document.parse(
+      /*commented this latest on 25 November 2020 Document.parse(
         "{$project : {'accession':1, 'database':1, 'omicsType':'$additional.omics_type'," +
           "'species':'$additional.species', 'tissue':'$additional.tissue', 'disease':'$additional.disease'," +
           "'searchDomain':'$additional.search_domains'," +
@@ -33,13 +33,22 @@ object SparkMongo {
           "'citationCountNormalized':'$additional.citation_count_scaled','reanalysisCountNormalized':'$additional.reanalysis_count_scaled',"+
           "'viewCountNormalized':'$additional.view_count_scaled','downloadCountNormalized':'$additional.download_count_scaled'," +
           "'searchCountNormalized':'$additional.normalized_connections'" +
-          "}}")
+          "}}")*/
 /*      Document.parse(
         "{$project : {'accession':1, 'database':1, 'omicsType':'$additional.omics_type'," +
           "'species':'$additional.species','tissue':'$additional.tissue','disease':'$additional.disease'," +
           "'citationCount':'$additional.citation_count','reanalysisCount':'$additional.reanalysis_count',"+
           "'searchDomain':'$additional.search_domains','searchCount':'$additional.search_count'," +
           "'ensembl':'$crossReferences.ensembl','uniprot': '$crossReferences.uniprot','viewCount':'$additional.view_count'}}")*/
+      Document.parse(
+        "{$project : {'accession':1, 'database':1,"  +
+          "'citationCount':'$additional.citation_count','reanalysisCount':'$additional.reanalysis_count',"+
+          "'searchCount':'$additional.search_count'," +
+          "'viewCount':'$additional.view_count','downloadCount':'$additional.download_count' " +
+          "'citationCountNormalized':'$additional.citation_count_scaled','reanalysisCountNormalized':'$additional.reanalysis_count_scaled',"+
+          "'viewCountNormalized':'$additional.view_count_scaled','downloadCountNormalized':'$additional.download_count_scaled'," +
+          "'searchCountNormalized':'$additional.normalized_connections'" +
+          "}}")
     ))
     //println(aggregatedRdd.count)
     //aggregatedRdd.take(10).foreach(dt => println(dt.toJson))
@@ -72,11 +81,25 @@ object SparkMongo {
       //.withColumn(Constants.flatDownloadCount, functions.explode_outer($"downloadCount"))*/
     //
 
-    val explodeDF = csvDf.withColumn(Constants.flatDomain, functions.explode_outer($"searchDomain"))
+
+    /*commented latest on 2020*/
+    /*val explodeDF = csvDf.withColumn(Constants.flatDomain, functions.explode_outer($"searchDomain"))
       .withColumn(Constants.flatTissue, functions.explode_outer($"tissue"))
       .withColumn(Constants.flatDisease, functions.explode_outer($"disease"))
       .withColumn(Constants.flatSpecies, functions.explode_outer($"species"))
       .withColumn(Constants.flatOmicsType, functions.explode_outer($"omicsType"))
+      .withColumn(Constants.flatViewCount, functions.explode_outer($"viewCount"))
+      .withColumn(Constants.flatSearchCount, functions.explode_outer($"searchCount"))
+      .withColumn(Constants.flatReanalysisCount, functions.explode_outer($"reanalysisCount"))
+      .withColumn(Constants.flatCitationCount, functions.explode_outer($"citationCount"))
+      .withColumn(Constants.flatDownloadCount, functions.explode_outer($"downloadCount"))
+      .withColumn(Constants.flatViewCountNormalized, functions.explode_outer($"viewCountNormalized"))
+      .withColumn(Constants.flatSearchCountNormalized, functions.explode_outer($"searchCountNormalized"))
+      .withColumn(Constants.flatReanalysisCountNormalized, functions.explode_outer($"reanalysisCountNormalized"))
+      .withColumn(Constants.flatCitationCountNormalized, functions.explode_outer($"citationCountNormalized"))
+      .withColumn(Constants.flatDownloadCountNormalized, functions.explode_outer($"downloadCountNormalized"))*/
+
+    val explodeDF = csvDf
       .withColumn(Constants.flatViewCount, functions.explode_outer($"viewCount"))
       .withColumn(Constants.flatSearchCount, functions.explode_outer($"searchCount"))
       .withColumn(Constants.flatReanalysisCount, functions.explode_outer($"reanalysisCount"))
@@ -93,18 +116,19 @@ object SparkMongo {
     //println(explodeDF.count())
     //df.select($"_id", $"addresses"(0)("street"), $"country"("name"))
 
-    val domainCount = explodeDF.withColumn("tempColumn", split(explodeDF.col(Constants.flatDomain), "~")).
+   /* commented latest on 25th November 2020
+      val domainCount = explodeDF.withColumn("tempColumn", split(explodeDF.col(Constants.flatDomain), "~")).
       //withColumn($"tempColumn".getItem(0).toString() , $"tempColumn".getItem(1))
       withColumn(Constants.finalDomain, $"tempColumn".getItem(0))
       .withColumn(Constants.domainCount, $"tempColumn".getItem(1))
 
-    val finalDF = domainCount.drop("tempColumn", Constants.flatDomain, "searchDomain")
+    val finalDF = domainCount.drop("tempColumn", Constants.flatDomain, "searchDomain")*/
 
     //finalDF.printSchema()
 
-    println("count of records is " + finalDF.count())
+    println("count of records is " + explodeDF.count())
 
-    finalDF
+    explodeDF
   }
 
   def saveDataToFile(filePath:String, finalDF:DataFrame) {
