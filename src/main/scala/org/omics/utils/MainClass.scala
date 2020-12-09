@@ -6,8 +6,8 @@ object MainClass {
 
   def main(args: Array[String]): Unit = {
 
-    SparkMongo.getProcesseData(SparkMongo.getAggregateData)
-    //SparkMongo.normalizeMetrics(SparkMongo.getProcesseData(SparkMongo.getAggregateData))
+    //SparkMongo.getProcesseData(SparkMongo.getAggregateData)
+    SparkMongo.normalizeMetrics(SparkMongo.getProcesseData(SparkMongo.getAggregateData))
   }
 
 }
