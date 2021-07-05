@@ -2,15 +2,19 @@ package org.omics.mongoop
 
 import com.mongodb.spark.MongoSpark
 import org.apache.spark.sql.functions.{split, sum}
-import org.apache.spark.sql.{DataFrame, SaveMode, functions}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, functions}
 import org.bson.Document
 import org.omics.sparkop.SparkInfo
 import org.omics.utils.Constants
+
+import scala.collection.mutable
 
 
 object SparkMongo {
 
   val sqlContext = SparkInfo.getSqlContext()
+
+  //def denominatorDf = omicsConDenominators
 
   def getAggregateData :DataFrame = {
 
@@ -41,19 +45,20 @@ object SparkMongo {
           "'searchDomain':'$additional.search_domains','searchCount':'$additional.search_count'," +
           "'ensembl':'$crossReferences.ensembl','uniprot': '$crossReferences.uniprot','viewCount':'$additional.view_count'}}")*/
       Document.parse(
-        "{$project : {'accession':1, 'database':1,"  +
+        "{$project : {'accession':1, 'database':1,'omics_type':'$additional.omics_type'"  +
           "'citationCount':'$additional.citation_count','reanalysisCount':'$additional.reanalysis_count',"+
           "'searchCount':'$additional.search_count'," +
           "'viewCount':'$additional.view_count','downloadCount':'$additional.download_count' " +
           "'citationCountNormalized':'$additional.citation_count_scaled','reanalysisCountNormalized':'$additional.reanalysis_count_scaled',"+
           "'viewCountNormalized':'$additional.view_count_scaled','downloadCountNormalized':'$additional.download_count_scaled'," +
           "'searchCountNormalized':'$additional.normalized_connections'" +
-          "}}")
+          "}}")//,
+      //Document.parse("{$limit:1000}")
     ))
     //println(aggregatedRdd.count)
     //aggregatedRdd.take(10).foreach(dt => println(dt.toJson))
 
-    println(aggregatedRdd.toDF.printSchema())
+    //println(aggregatedRdd.toDF.printSchema())
 
     //println("count of records is " + aggregatedRdd.count())
 
@@ -126,7 +131,7 @@ object SparkMongo {
 
     //finalDF.printSchema()
 
-    println("count of records is " + explodeDF.count())
+    ///println("count of records is " + explodeDF.count())
 
     explodeDF
   }
@@ -153,7 +158,7 @@ object SparkMongo {
       )
         .pivot(Constants.finalDomain).agg(sum($"domainCount"))
 
-    pivotDf.take(10).foreach(dt => println(dt))
+    //pivotDf.take(10).foreach(dt => println(dt))
     pivotDf.printSchema()
 
     println("count of rows is " + pivotDf.count())
@@ -164,7 +169,7 @@ object SparkMongo {
       .mode(SaveMode.Overwrite).save(Constants.savePath)
   }
 
-  def normalizeMetrics(inputDf:DataFrame) {
+  def normalizeMetrics(inputDf:DataFrame, omicsDf:mutable.HashMap[String,Double]) {
 
     //MongoUpdates.getMaxFieldValue()
     //print(inputDf.count())
@@ -175,15 +180,32 @@ object SparkMongo {
     MongoUpdates.getDownloadMaxMinValue()
     MongoUpdates.objList
     inputDf.rdd.map(dt => {
-      MongoUpdates.normalize(dt);
+      MongoUpdates.normalize(dt, omicsDf);
     }).count()
     //MongoUpdates.normalize()
 
   }
 
-  /* def main(args: Array[String]): Unit = {
-      MongoUpdates.getCitationMaxMinValue()
-      //SparkMongo.normalizeMetrics(SparkMongo.getProcesseData(SparkMongo.getAggregateData))
-    }*/
+  def omicsConDenominators(): DataFrame ={
+    import sqlContext.implicits._
+    val omicsDf = SparkInfo.getSqlContext().read.
+      format("csv").option("header", "true").load("/user/gdass/connections.csv")
+    //.load("/home/gaur/connections.csv")
+    //"file:///homes/gdass/connections.csv"
+    //omicsDf.show()
+    omicsDf.toDF()
+  }
+
+   def main(args: Array[String]): Unit = {
+
+      //SparkMongo.omicsConDenominators(SparkMongo.sqlContext)
+      //SparkMongo.getAggregateData.show()
+      val map = scala.collection.mutable.HashMap.empty[String,Double]
+      val omicsCount = SparkMongo.omicsConDenominators.collect.foreach(r => map += (r.get(0).toString -> r.get(1).toString.toInt))
+      //map
+      //MongoUpdates.getCitationMaxMinValue()
+      SparkMongo.normalizeMetrics(SparkMongo.getProcesseData(SparkMongo.getAggregateData), map)
+    }
 
 }
+

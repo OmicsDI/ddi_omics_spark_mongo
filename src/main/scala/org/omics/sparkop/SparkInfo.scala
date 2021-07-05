@@ -15,8 +15,8 @@ object SparkInfo {
       .config(Constants.mongOutUriKey, Constants.prodMongoUri)
       .config("fs.hdfs.impl",classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
       .getOrCreate()
-    sparkSession.conf.set("spark.driver.memory","6g")
-    sparkSession.conf.set("spark.executor.memory", "5g")
+    //sparkSession.conf.set("spark.driver.memory","6g")
+    //sparkSession.conf.set("spark.executor.memory", "5g")
     sparkSession
   }
 

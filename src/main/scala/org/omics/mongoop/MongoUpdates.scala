@@ -1,10 +1,12 @@
 package org.omics.mongoop
 
 import com.mongodb.casbah.Imports.{$set, BasicDBList, BasicDBObject, MongoClient, MongoClientURI, MongoDBList, MongoDBObject}
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import org.omics.model.{Dataset, MaxMinValues}
 import org.omics.utils.Constants
 
+import scala.collection.mutable
 import scala.compat.java8.StreamConverters._
 
 
@@ -151,7 +153,7 @@ object MongoUpdates {
     cursor.get("firstBatch")
   }
 
-  def normalize(row:Row)  = {
+  def normalize(row:Row, omicsDF:mutable.HashMap[String,Double])  = {
       val maxCitationCount = objList.maxCitationCount
       val minCitationCount = objList.minCitationCount
       val maxSearchCount = objList.maxSearchCount
@@ -163,10 +165,10 @@ object MongoUpdates {
       val maxDownloadCount = objList.maxDownloadCount
       val minDownloadCount = 0.0 //objList.minDownloadCount
 
-      print("maximum value of downloads is " + objList.maxDownloadCount)
-      print("minimum value of downloads is " + objList.minDownloadCount)
+      //print("maximum value of downloads is " + objList.maxDownloadCount)
+      //print("minimum value of downloads is " + objList.minDownloadCount)
 
-/*      val minCitationCount = toInt(aggregateData.getString(Constants.minCitationCount))
+      /*val minCitationCount = toInt(aggregateData.getString(Constants.minCitationCount))
       val maxSearchCount = toInt(aggregateData.getString(Constants.maxSearchCount))
       val minSearchCount = toInt(aggregateData.getString(Constants.minSearchCount))
       val maxReanalysisCount = toInt(aggregateData.getString(Constants.maxReanalysisCount))
@@ -179,7 +181,7 @@ object MongoUpdates {
       //if(row.getValuesMap(Seq(Constants.flatReanalysisCount)).get(Constants.flatReanalysisCount).get != null) {
         reanalysisCountScaled = scaleFormula(maxReanalysisCount.toDouble, minReanalysisCount.toDouble, toInt(row.getAs(Constants.flatReanalysisCount)).toDouble)
       //}
-      val searchCountScaled = scaleFormula(maxSearchCount.toDouble, minSearchCount.toDouble, toInt(row.getAs(Constants.flatSearchCount)).toDouble)
+      val searchCountScaled = scaleConnections(row, omicsDF)
       val viewCountScaled = scaleFormula(maxViewCount.toDouble, minViewCount.toDouble, toInt(row.getAs(Constants.flatViewCount)).toDouble)
       var downloadCountScaled = if (row.getValuesMap(Seq(Constants.flatDownloadCount)).get(Constants.flatDownloadCount).get != null)  scaleFormula(maxDownloadCount.toDouble, minDownloadCount.toDouble, row.getAs(Constants.flatDownloadCount).toString.toDouble) else 0.0
 
@@ -192,7 +194,8 @@ object MongoUpdates {
       updateAllMetricsDataset(
         Dataset(accession, database, searchCountScaled.toString,
           reanalysisCountScaled.toString, viewCountScaled.toString,
-          citationCountScaled.toString,downloadCountScaled.toString))
+          citationCountScaled.toString,downloadCountScaled.toString)
+      )
 
 
 
@@ -229,19 +232,48 @@ object MongoUpdates {
   }
 
   def scaleFormula(max:Double, min:Double, currentValue:Double) :Double ={
-        println("max value is " + max)
+        /*println("max value is " + max)
         println("min value is " + min)
-        println("current value is" + currentValue)
+        println("current value is" + currentValue)*/
         val normalizedValue = (currentValue - min) / (max - min)
         println(normalizedValue)
         normalizedValue
+  }
+
+  /*def scaleFormula(max:Double, min:Double, currentValue:Double) :Double ={
+    println("max value is " + max)
+    println("min value is " + min)
+    println("current value is" + currentValue)
+    val normalizedValue = (currentValue - min) / (max - min)
+    println(normalizedValue)
+    normalizedValue
+  }*/
+
+  def scaleConnections(row:Row, omicsDf:mutable.HashMap[String,Double]) :Double ={
+    var normalizedValue = 0.0000
+
+    if ( row.getAs(Constants.flatSearchCount) != null) {
+      val searchCount = row.getAs(Constants.flatSearchCount).toString.toDouble
+      val omicsType = if (row.getAs(Constants.omics_type) != null) {
+        val arr = row.getAs(Constants.omics_type).asInstanceOf[mutable.WrappedArray[String]].array
+        if (arr.length > 0) arr.head else "Unknown"
+      } else ""
+      //println("current value is" + searchCount)
+      omicsDf
+      val data = omicsDf.getOrElse(omicsType, 0.000).toDouble
+      //val data = toInt(denominatorDF.filter(col("OmicsType").isin(omicsType)).first().get(1).toString)
+
+      normalizedValue = if (searchCount >= data) 1.00 else searchCount/data
+      //println("search value and normalized value is ", row.getAs(Constants.accession) , row.getAs(Constants.omics_type), normalizedValue, searchCount)
+    }
+    normalizedValue
   }
 
   def updateAllMetricsDataset(dataset:Dataset ):Unit ={
     println(dataset)
     val query = MongoDBObject(Constants.accession -> dataset.accession, Constants.datasetDatabase -> dataset.database)
     val update = $set(
-      //Constants.additionalSearchScaled -> Set(dataset.connections),
+      Constants.additionalSearchScaled -> Set(dataset.connections),
       Constants.additionalCitationScaled -> Set(dataset.citation) ,
       Constants.additionalReanalaysisScaled -> Set(dataset.reanalysis),
       Constants.additionalViewScaled -> Set(dataset.view),
@@ -249,8 +281,13 @@ object MongoUpdates {
     )
     val result = coll.update( query, update )
 
-    println("Number updated: " + result.getN)
+    //println("Number updated: and accession updated is " + result.getN + " " +
+      dataset.accession + "with search value " + dataset.connections
 
+    println("accession updated is " + " " +
+      dataset.accession + "with search value " + dataset.connections )
   }
+
+
 
 }

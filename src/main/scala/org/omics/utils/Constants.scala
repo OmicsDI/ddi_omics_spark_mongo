@@ -9,7 +9,7 @@ object Constants {
   val scoreSearchCount = "scores.searchCount"
   val additionalSearchCount = "additional.search_count"
   val additionalDownloadCount = "additional.download_count"
-
+  val omics_type = "omics_type"
   val additionalSearchScaled = "additional.normalized_connections"
   val additionalCitationScaled = "additional.citation_count_scaled"
   val additionalReanalaysisScaled = "additional.reanalysis_count_scaled"
