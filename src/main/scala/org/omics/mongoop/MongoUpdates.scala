@@ -22,6 +22,7 @@ object MongoUpdates {
   //val objList = new MaxMinValues
   val objList = new mutable.HashMap[String, Double]()
 
+
   val db = mongoClient(Constants.mongoDatabase)
 
   val coll = db(Constants.mongoCollection)
@@ -155,7 +156,7 @@ object MongoUpdates {
     cursor.get("firstBatch")
   }
 
-  def normalize(row:Row, omicsDF:mutable.HashMap[String,Double], maxminMap: Map[String, Double])  = {
+  def normalize(row:Row, omicsDF:mutable.HashMap[String,Double], maxminMap: mutable.HashMap[String, Double])  = {
 
 /*      val maxCitationCount = objList.maxCitationCount
       val minCitationCount = objList.minCitationCount
@@ -216,8 +217,30 @@ object MongoUpdates {
       case e: Exception => 0
     }
   }
-
   def toList(dbObj: AnyRef) = {
+
+      println(dbObj)
+      dbObj match {
+          case dblist:BasicDBList => dblist.stream.toScala[Stream].map(_ match {
+            case o: BasicDBObject => {
+              if (objList.get(Constants.maxCitationCount).equals(0) && o.containsField(Constants.maxCitationCount)) objList.put(Constants.maxCitationCount, o.get(Constants.maxCitationCount).asInstanceOf[Int])
+              if (objList.get(Constants.minCitationCount).equals(0) && o.containsField(Constants.minCitationCount)) objList.put(Constants.minCitationCount, o.get(Constants.minCitationCount).asInstanceOf[Int])
+              if (objList.get(Constants.maxSearchCount).equals(0) && o.containsField(Constants.maxSearchCount)) objList.put(Constants.maxSearchCount , o.get(Constants.maxSearchCount).asInstanceOf[Int])
+              if (objList.get(Constants.minSearchCount).equals(0) && o.containsField(Constants.minSearchCount)) objList.put(Constants.minSearchCount , o.get(Constants.minSearchCount).asInstanceOf[Int])
+              if (objList.get(Constants.maxReanalysisCount).equals(0) && o.containsField(Constants.maxReanalysisCount)) objList.put(Constants.maxReanalysisCount , toInt(o.get(Constants.maxReanalysisCount).toString.replace(".0","")))
+              if (objList.get(Constants.minReanalysisCount).equals(0) && o.containsField(Constants.minReanalysisCount)) objList.put(Constants.minReanalysisCount , toInt(o.get(Constants.minReanalysisCount).toString.replace(".0","")))
+              if (objList.get(Constants.maxViewCount).equals(0) && o.containsField(Constants.maxViewCount)) objList.put(Constants.maxViewCount , toInt(o.get(Constants.maxViewCount).toString.replace(".0","")))
+              if (objList.get(Constants.minViewCount).equals(0) && o.containsField(Constants.minViewCount)) objList.put(Constants.minViewCount , toInt(o.get(Constants.minViewCount).toString.replace(".0","")))
+  //            if (objList.maxViewCount.equals(0) && o.containsField(Constants.maxViewCount)) objList.maxViewCount = o.get(Constants.maxViewCount).asInstanceOf[Int]
+  //            if (objList.minViewCount.equals(0) && o.containsField(Constants.minViewCount)) objList.minViewCount = o.get(Constants.minViewCount).asInstanceOf[Int]
+              if (objList.get(Constants.maxDownloadCount).equals(0) && o.containsField(Constants.maxDownloadCount)) objList.put(Constants.maxDownloadCount , toInt(o.get(Constants.maxDownloadCount).toString.replace(".0","")))
+              if (objList.get(Constants.minDownloadCount).equals(0) && o.containsField(Constants.minDownloadCount)) objList.put(Constants.minDownloadCount , toInt(o.get(Constants.minDownloadCount).toString.toString.replace(".0","")))
+            }
+        })
+      }
+    }
+
+  /*def toList(dbObj: AnyRef) = {
 
     println(dbObj)
     dbObj match {
@@ -238,7 +261,7 @@ object MongoUpdates {
           }
       })
     }
-  }
+  }*/
 
   def scaleFormula(max:Double, min:Double, currentValue:Double) :Double ={
         /*println("max value is " + max)
