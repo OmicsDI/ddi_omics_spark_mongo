@@ -7,16 +7,16 @@ case class CsvFields(accession:String, database:String, omicsType:Array[String],
                     )
 
 class MaxMinValues {
-  var maxCitationCount = 0
-  var minCitationCount = 0
-  var maxSearchCount = 0
-  var minSearchCount = 0
-  var maxReanalysisCount = 0
-  var minReanalysisCount = 0
-  var maxViewCount = 0
-  var minViewCount = 0
-  var maxDownloadCount = 0
-  var minDownloadCount = 0
+  var maxCitationCount = 0.0
+  var minCitationCount = 0.0
+  var maxSearchCount = 0.0
+  var minSearchCount = 0.0
+  var maxReanalysisCount = 0.0
+  var minReanalysisCount = 0.0
+  var maxViewCount = 0.0
+  var minViewCount = 0.0
+  var maxDownloadCount = 0.0
+  var minDownloadCount = 0.0
 }
 
 case class Dataset(accession:String, database: String, connections:String,

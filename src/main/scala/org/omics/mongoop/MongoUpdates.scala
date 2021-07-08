@@ -1,6 +1,7 @@
 package org.omics.mongoop
 
 import com.mongodb.casbah.Imports.{$set, BasicDBList, BasicDBObject, MongoClient, MongoClientURI, MongoDBList, MongoDBObject}
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import org.omics.model.{Dataset, MaxMinValues}
@@ -18,7 +19,8 @@ object MongoUpdates {
 
   //val objList = getMaxFieldValue().asInstanceOf[BasicDBList]
 
-  val objList = new MaxMinValues
+  //val objList = new MaxMinValues
+  val objList = new mutable.HashMap[String, Double]()
 
   val db = mongoClient(Constants.mongoDatabase)
 
@@ -153,9 +155,11 @@ object MongoUpdates {
     cursor.get("firstBatch")
   }
 
-  def normalize(row:Row, omicsDF:mutable.HashMap[String,Double])  = {
-      val maxCitationCount = objList.maxCitationCount
+  def normalize(row:Row, omicsDF:mutable.HashMap[String,Double], maxminMap: Map[String, Double])  = {
+
+/*      val maxCitationCount = objList.maxCitationCount
       val minCitationCount = objList.minCitationCount
+
       val maxSearchCount = objList.maxSearchCount
       val minSearchCount = objList.minSearchCount
       val maxReanalysisCount = objList.maxReanalysisCount
@@ -163,18 +167,16 @@ object MongoUpdates {
       val maxViewCount = objList.maxViewCount
       val minViewCount = objList.minViewCount
       val maxDownloadCount = objList.maxDownloadCount
+      val minDownloadCount = 0.0 */ //objList.minDownloadCount
+
+      val maxCitationCount = maxminMap.get(Constants.maxCitationCount).get
+      val minCitationCount = maxminMap.get(Constants.minCitationCount).get
+      val maxReanalysisCount = maxminMap.get(Constants.maxReanalysisCount).get
+      val minReanalysisCount = maxminMap.get(Constants.minReanalysisCount).get
+      val maxViewCount = maxminMap.get(Constants.maxViewCount).get
+      val minViewCount = maxminMap.get(Constants.minViewCount).get
+      val maxDownloadCount = maxminMap.get(Constants.maxDownloadCount).get
       val minDownloadCount = 0.0 //objList.minDownloadCount
-
-      //print("maximum value of downloads is " + objList.maxDownloadCount)
-      //print("minimum value of downloads is " + objList.minDownloadCount)
-
-      /*val minCitationCount = toInt(aggregateData.getString(Constants.minCitationCount))
-      val maxSearchCount = toInt(aggregateData.getString(Constants.maxSearchCount))
-      val minSearchCount = toInt(aggregateData.getString(Constants.minSearchCount))
-      val maxReanalysisCount = toInt(aggregateData.getString(Constants.maxReanalysisCount))
-      val minReanalysisCount = toInt(aggregateData.getString(Constants.minReanalysisCount))
-      val maxViewCount = toInt(aggregateData.getString(Constants.maxViewCount))
-      val minViewCount = toInt(aggregateData.getString(Constants.minViewCount))*/
 
       val citationCountScaled = scaleFormula(maxCitationCount.toDouble, minCitationCount.toDouble, toInt(row.getAs(Constants.flatCitationCount)).toDouble)
       var reanalysisCountScaled = 0.0
@@ -187,15 +189,21 @@ object MongoUpdates {
 
     //row.getValuesMap(Seq(Constants.flatDownloadCount)).get(Constants.flatDownloadCount).get == null
 
+    println(" citatiomaxcount ", maxCitationCount, " citationmincount ", minCitationCount,
+      " reanalysismaxCount ", maxReanalysisCount, " reanalysismincount  ", minReanalysisCount,
+      " downloadmaxcount ", maxDownloadCount, " downloadmincount ", minDownloadCount,
+      " viewmaxcount ", maxViewCount, " viewmincount ", minViewCount,
+      " connectionCountScaled ", searchCountScaled
+    )
 
       val accession = row.getAs[String](Constants.accession)
       val database = row.getAs[String](Constants.datasetDatabase)
 
-      updateAllMetricsDataset(
+      /*updateAllMetricsDataset(
         Dataset(accession, database, searchCountScaled.toString,
           reanalysisCountScaled.toString, viewCountScaled.toString,
           citationCountScaled.toString,downloadCountScaled.toString)
-      )
+      )*/
 
 
 
@@ -210,6 +218,7 @@ object MongoUpdates {
   }
 
   def toList(dbObj: AnyRef) = {
+
     println(dbObj)
     dbObj match {
         case dblist:BasicDBList => dblist.stream.toScala[Stream].map(_ match {
@@ -239,15 +248,6 @@ object MongoUpdates {
         println(normalizedValue)
         normalizedValue
   }
-
-  /*def scaleFormula(max:Double, min:Double, currentValue:Double) :Double ={
-    println("max value is " + max)
-    println("min value is " + min)
-    println("current value is" + currentValue)
-    val normalizedValue = (currentValue - min) / (max - min)
-    println(normalizedValue)
-    normalizedValue
-  }*/
 
   def scaleConnections(row:Row, omicsDf:mutable.HashMap[String,Double]) :Double ={
     var normalizedValue = 0.0000
