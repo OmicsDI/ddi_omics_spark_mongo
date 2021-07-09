@@ -217,7 +217,6 @@ object SparkMongo {
       format("csv").option("header", "true")
      .load("/user/gdass/connections.csv")
     //.load("/home/gaur/connections.csv")
-    //"file:///homes/gdass/connections.csv"
     //omicsDf.show()
     omicsDf.toDF()
   }
