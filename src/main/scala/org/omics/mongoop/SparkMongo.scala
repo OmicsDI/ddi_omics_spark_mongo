@@ -15,6 +15,14 @@ object SparkMongo {
 
   val sqlContext = SparkInfo.getSqlContext()
 
+  val downloadmaxaccum = sqlContext.sparkContext.doubleAccumulator("downloadmax")
+
+  val viewmaxaccum = sqlContext.sparkContext.doubleAccumulator("viewmax")
+
+  val citationmaxaccum = sqlContext.sparkContext.doubleAccumulator("citationmax")
+
+  val reanalysismaxaccum = sqlContext.sparkContext.doubleAccumulator("reanalysismax")
+
   //def denominatorDf = omicsConDenominators
 
   def getAggregateData :DataFrame = {
@@ -53,8 +61,8 @@ object SparkMongo {
           "'citationCountNormalized':'$additional.citation_count_scaled','reanalysisCountNormalized':'$additional.reanalysis_count_scaled',"+
           "'viewCountNormalized':'$additional.view_count_scaled','downloadCountNormalized':'$additional.download_count_scaled'," +
           "'searchCountNormalized':'$additional.normalized_connections'" +
-          "}}"),
-      Document.parse("{$limit:500}")
+          "}}")//,
+      //Document.parse("{$limit:500}")
     ))
     //println(aggregatedRdd.count)
     //aggregatedRdd.take(10).foreach(dt => println(dt.toJson))
@@ -177,7 +185,7 @@ object SparkMongo {
     MongoUpdates.getViewMaxMinValue()
     MongoUpdates.getDownloadMaxMinValue()
     //val maxminMap = scala.collection.mutable.HashMap.empty[String,Double]
-    val maxminMap = Map(Constants.maxViewCount->MongoUpdates.objList.maxViewCount,
+    /*val maxminMap = Map(Constants.maxViewCount->MongoUpdates.objList.maxViewCount,
       Constants.minViewCount-> MongoUpdates.objList.minViewCount,
       Constants.maxReanalysisCount->MongoUpdates.objList.maxReanalysisCount,
       Constants.minReanalysisCount-> MongoUpdates.objList.minReanalysisCount,
@@ -185,8 +193,11 @@ object SparkMongo {
       Constants.minCitationCount-> MongoUpdates.objList.minCitationCount,
       Constants.maxDownloadCount->MongoUpdates.objList.maxDownloadCount,
       Constants.minDownloadCount-> MongoUpdates.objList.minDownloadCount
-    )
-    println(maxminMap.formatted("-"))
+    )*/
+    println("updated values in map are ", MongoUpdates.objList.formatted("-"))
+    println("accumulator values are " , SparkMongo.downloadmaxaccum.value, SparkMongo.citationmaxaccum.value, SparkMongo.viewmaxaccum.value, SparkMongo.reanalysismaxaccum.value)
+
+    //inputDf.show(2)
 
     //MongoUpdates.getMaxFieldValue()
     //print(inputDf.count())
@@ -196,10 +207,14 @@ object SparkMongo {
     MongoUpdates.getViewMaxMinValue()
     MongoUpdates.getDownloadMaxMinValue()*/
     MongoUpdates.objList
+
+
     inputDf.rdd.map(dt => {
-      MongoUpdates.normalize(dt, omicsDf, maxminMap);
+      MongoUpdates.normalize(dt, omicsDf, MongoUpdates.objList);
     }).count()
+
     //MongoUpdates.normalize()
+    println("accumulator values are " , SparkMongo.downloadmaxaccum.value, SparkMongo.citationmaxaccum, SparkMongo.viewmaxaccum, SparkMongo.reanalysismaxaccum)
 
   }
 
@@ -207,8 +222,8 @@ object SparkMongo {
     import sqlContext.implicits._
     val omicsDf = SparkInfo.getSqlContext().read.
       format("csv").option("header", "true")
-     .load("/user/gdass/connections.csv")
-    //.load("/home/gaur/connections.csv")
+     //.load("/user/gdass/connections.csv")
+    .load("/home/gaur/connections.csv")
     //"file:///homes/gdass/connections.csv"
     //omicsDf.show()
     omicsDf.toDF()
