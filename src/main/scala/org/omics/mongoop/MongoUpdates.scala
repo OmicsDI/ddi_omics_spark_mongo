@@ -156,7 +156,7 @@ object MongoUpdates {
     cursor.get("firstBatch")
   }
 
-  def normalize(row:Row, omicsDF:mutable.HashMap[String,Double], maxminMap: mutable.HashMap[String, Double])  = {
+  def normalize(row:Row, omicsDF:mutable.HashMap[String,Double])  = {
 
 /*      val maxCitationCount = objList.maxCitationCount
       val minCitationCount = objList.minCitationCount
@@ -179,13 +179,14 @@ object MongoUpdates {
       val maxDownloadCount = SparkMongo.downloadmaxaccum.value
       val minDownloadCount = 0.0 //objList.minDownloadCount
 
-      val citationCountScaled = scaleFormula(maxCitationCount, minCitationCount, toInt(row.getAs(Constants.flatCitationCount)).toDouble)
+      val citationCountScaled = if(row.getValuesMap(Seq(Constants.flatReanalysisCount)).get(Constants.flatReanalysisCount).get != null) scaleFormula(maxCitationCount, minCitationCount, toInt(row.getAs(Constants.flatCitationCount)).toDouble) else 0.0
       var reanalysisCountScaled = 0.0
-      //if(row.getValuesMap(Seq(Constants.flatReanalysisCount)).get(Constants.flatReanalysisCount).get != null) {
+      if(row.getValuesMap(Seq(Constants.flatReanalysisCount)).get(Constants.flatReanalysisCount).get != null) {
         reanalysisCountScaled = scaleFormula(maxReanalysisCount, minReanalysisCount, toInt(row.getAs(Constants.flatReanalysisCount)).toDouble)
-      //}
-      val searchCountScaled = scaleConnections(row, omicsDF)
-      val viewCountScaled = scaleFormula(maxViewCount, minViewCount, toInt(row.getAs(Constants.flatViewCount)).toDouble)
+      }
+
+      val searchCountScaled = if(row.getValuesMap(Seq(Constants.flatSearchCount)).get(Constants.flatSearchCount).get != null) scaleConnections(row, omicsDF) else 0.0
+      val viewCountScaled = if(row.getValuesMap(Seq(Constants.flatViewCount)).get(Constants.flatViewCount).get != null) scaleFormula(maxViewCount, minViewCount, toInt(row.getAs(Constants.flatViewCount)).toDouble) else 0.0
       var downloadCountScaled = if (row.getValuesMap(Seq(Constants.flatDownloadCount)).get(Constants.flatDownloadCount).get != null)  scaleFormula(maxDownloadCount.toDouble, minDownloadCount.toDouble, row.getAs(Constants.flatDownloadCount).toString.toDouble) else 0.0
 
     //row.getValuesMap(Seq(Constants.flatDownloadCount)).get(Constants.flatDownloadCount).get == null
@@ -282,7 +283,8 @@ object MongoUpdates {
         if (arr.length > 0) arr.head else "Unknown"
       } else ""
       //println("current value is" + searchCount)
-      omicsDf
+      //
+      // omicsDf
       val data = omicsDf.getOrElse(omicsType, 0.000).toDouble
       //val data = toInt(denominatorDF.filter(col("OmicsType").isin(omicsType)).first().get(1).toString)
 
