@@ -5,6 +5,8 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import org.omics.model.{Dataset, MaxMinValues}
+import org.omics.mongoop.OmicsUpdateVocab.{getOmicsCVMap, updateOmics}
+import org.omics.utils
 import org.omics.utils.Constants
 
 import scala.collection.mutable
@@ -156,15 +158,15 @@ object MongoUpdates {
     cursor.get("firstBatch")
   }
 
-  def normalize(row:Row, omicsDF:mutable.HashMap[String,Double])  = {
+  def normalize(row:Row, omicsDF:mutable.HashMap[String,Double], omicsVocab:mutable.HashMap[String, String])  = {
 
-      val maxCitationCount = SparkMongo.citationmaxaccum.value
+      val maxCitationCount = 540.0
       val minCitationCount = 0.0
-      val maxReanalysisCount = SparkMongo.reanalysismaxaccum.value
+      val maxReanalysisCount = 6733.0
       val minReanalysisCount = 0.0
-      val maxViewCount = SparkMongo.viewmaxaccum.value
+      val maxViewCount = 3243.0
       val minViewCount = 0.0
-      val maxDownloadCount = SparkMongo.downloadmaxaccum.value
+      val maxDownloadCount = 40893.0
       val minDownloadCount = 0.0 //objList.minDownloadCount
 
       val citationCountScaled = if(row.getValuesMap(Seq(Constants.flatReanalysisCount)).get(Constants.flatReanalysisCount).get != null) scaleFormula(maxCitationCount, minCitationCount, toInt(row.getAs(Constants.flatCitationCount)).toDouble) else 0.0
@@ -187,11 +189,12 @@ object MongoUpdates {
 
       val accession = row.getAs[String](Constants.accession)
       val database = row.getAs[String](Constants.datasetDatabase)
+      val updatedOmics = updateOmics(omicsVocab, row)
 
       updateAllMetricsDataset(
         Dataset(accession, database, searchCountScaled.toString,
           reanalysisCountScaled.toString, viewCountScaled.toString,
-          citationCountScaled.toString,downloadCountScaled.toString)
+          citationCountScaled.toString,downloadCountScaled.toString, updatedOmics)
       )
 
 
@@ -255,7 +258,9 @@ object MongoUpdates {
       Constants.additionalCitationScaled -> Set(dataset.citation) ,
       Constants.additionalReanalaysisScaled -> Set(dataset.reanalysis),
       Constants.additionalViewScaled -> Set(dataset.view),
-      Constants.additionalDownloadScaled -> Set(dataset.download)
+      Constants.additionalDownloadScaled -> Set(dataset.download),
+      Constants.omics_type -> Set(dataset.omics_type)
+
     )
     val result = coll.update( query, update )
 
@@ -263,7 +268,7 @@ object MongoUpdates {
       dataset.accession + "with search value " + dataset.connections
 
     println("accession updated is " + " " +
-      dataset.accession + "with search value " + dataset.connections )
+      dataset.accession + "with search value " + dataset.connections + "omicstype is " + dataset.omics_type )
   }
 
 

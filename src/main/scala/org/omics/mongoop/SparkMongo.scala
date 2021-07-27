@@ -108,19 +108,19 @@ object SparkMongo {
       .mode(SaveMode.Overwrite).save(Constants.savePath)
   }
 
-  def normalizeMetrics(inputDf:DataFrame, omicsDf:mutable.HashMap[String,Double]) {
+  def normalizeMetrics(inputDf:DataFrame, omicsDf:mutable.HashMap[String,Double], vocabMap:mutable.HashMap[String, String]) {
 
-    MongoUpdates.getCitationMaxMinValue()
+/*    MongoUpdates.getCitationMaxMinValue()
     MongoUpdates.getReanalysisMaxMinValue()
     MongoUpdates.getViewMaxMinValue()
-    MongoUpdates.getDownloadMaxMinValue()
+    MongoUpdates.getDownloadMaxMinValue()*/
 
     inputDf.rdd.map(dt => {
-      MongoUpdates.normalize(dt, omicsDf);
+      MongoUpdates.normalize(dt, omicsDf, vocabMap);
     }).count()
 
     //MongoUpdates.normalize()
-    println("accumulator values are " , SparkMongo.downloadmaxaccum.value, SparkMongo.citationmaxaccum, SparkMongo.viewmaxaccum, SparkMongo.reanalysismaxaccum)
+    //println("accumulator values are " , SparkMongo.downloadmaxaccum.value, SparkMongo.citationmaxaccum, SparkMongo.viewmaxaccum, SparkMongo.reanalysismaxaccum)
 
   }
 

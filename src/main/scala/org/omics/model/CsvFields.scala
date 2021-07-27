@@ -20,4 +20,4 @@ class MaxMinValues {
 }
 
 case class Dataset(accession:String, database: String, connections:String,
-                   reanalysis:String = "", view:String = "", citation:String = "",download:String = "")
+                   reanalysis:String = "", view:String = "", citation:String = "",download:String = "", omics_type:String)

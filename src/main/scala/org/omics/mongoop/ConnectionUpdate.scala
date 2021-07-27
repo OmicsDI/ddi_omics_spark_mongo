@@ -25,7 +25,7 @@ object ConnectionUpdate {
 
   def updateConnectionCount(input:Row):Unit ={
     print(input)
-    MongoUpdates.updateCasbahImports(new Dataset(input.get(0).toString, input.getString(1), (input.get(2).asInstanceOf[Double]/5).toString))
+    //MongoUpdates.updateCasbahImports(new Dataset(input.get(0).toString, input.getString(1), (input.get(2).asInstanceOf[Double]/5).toString,))
   }
 
 
