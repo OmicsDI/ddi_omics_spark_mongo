@@ -32,27 +32,6 @@ object SparkMongo {
     //'downloadCount':'$additional.download_count',
 
     val aggregatedRdd = rdd.withPipeline(Seq(
-      //Document.parse("{ $match: { 'additional.search_domains' : { $exists :true } } }"),
-      //Document.parse("{ $match: { 'database' : 'BioModels' } }"),
-      //Document.parse("{ $match: { 'additional.download_count' : { $exists :true } } }"),
-      /*commented this latest on 25 November 2020 Document.parse(
-        "{$project : {'accession':1, 'database':1, 'omicsType':'$additional.omics_type'," +
-          "'species':'$additional.species', 'tissue':'$additional.tissue', 'disease':'$additional.disease'," +
-          "'searchDomain':'$additional.search_domains'," +
-          "'ensembl':'$crossReferences.ensembl', 'uniprot': '$crossReferences.uniprot', " +
-          "'citationCount':'$additional.citation_count', 'reanalysisCount':'$additional.reanalysis_count',"+
-          "'viewCount':'$additional.view_count', 'downloadCount':'$additional.download_count'" +
-          "'searchCount':'$additional.search_count'" +
-          "'citationCountNormalized':'$additional.citation_count_scaled','reanalysisCountNormalized':'$additional.reanalysis_count_scaled',"+
-          "'viewCountNormalized':'$additional.view_count_scaled','downloadCountNormalized':'$additional.download_count_scaled'," +
-          "'searchCountNormalized':'$additional.normalized_connections'" +
-          "}}")*/
-/*      Document.parse(
-        "{$project : {'accession':1, 'database':1, 'omicsType':'$additional.omics_type'," +
-          "'species':'$additional.species','tissue':'$additional.tissue','disease':'$additional.disease'," +
-          "'citationCount':'$additional.citation_count','reanalysisCount':'$additional.reanalysis_count',"+
-          "'searchDomain':'$additional.search_domains','searchCount':'$additional.search_count'," +
-          "'ensembl':'$crossReferences.ensembl','uniprot': '$crossReferences.uniprot','viewCount':'$additional.view_count'}}")*/
       Document.parse(
         "{$project : {'accession':1, 'database':1,'omics_type':'$additional.omics_type'"  +
           "'citationCount':'$additional.citation_count','reanalysisCount':'$additional.reanalysis_count',"+
@@ -61,8 +40,8 @@ object SparkMongo {
           "'citationCountNormalized':'$additional.citation_count_scaled','reanalysisCountNormalized':'$additional.reanalysis_count_scaled',"+
           "'viewCountNormalized':'$additional.view_count_scaled','downloadCountNormalized':'$additional.download_count_scaled'," +
           "'searchCountNormalized':'$additional.normalized_connections'" +
-          "}}")//,
-      //Document.parse("{$limit:500}")
+          "}}"),
+      Document.parse("{$limit:500}")
     ))
     //println(aggregatedRdd.count)
     //aggregatedRdd.take(10).foreach(dt => println(dt.toJson))
@@ -81,38 +60,6 @@ object SparkMongo {
 
     val csvDf = aggregateDf
 
-    //csvDf.take(10).foreach(dt => println(dt))
-/*
-    val explodeDF = csvDf.withColumn(Constants.flatDomain, functions.explode_outer($"searchDomain"))
-      .withColumn(Constants.flatTissue, functions.explode_outer($"tissue"))
-      .withColumn(Constants.flatDisease, functions.explode_outer($"disease"))
-      .withColumn(Constants.flatSpecies, functions.explode_outer($"species"))
-      .withColumn(Constants.flatOmicsType, functions.explode_outer($"omicsType"))
-      .withColumn(Constants.flatViewCount, functions.explode_outer($"viewCount"))
-      .withColumn(Constants.flatSearchCount, functions.explode_outer($"searchCount"))
-      .withColumn(Constants.flatReanalysisCount, functions.explode_outer($"reanalysisCount"))
-      .withColumn(Constants.flatCitationCount, functions.explode_outer($"citationCount"))
-      //.withColumn(Constants.flatDownloadCount, functions.explode_outer($"downloadCount"))*/
-    //
-
-
-    /*commented latest on 2020*/
-    /*val explodeDF = csvDf.withColumn(Constants.flatDomain, functions.explode_outer($"searchDomain"))
-      .withColumn(Constants.flatTissue, functions.explode_outer($"tissue"))
-      .withColumn(Constants.flatDisease, functions.explode_outer($"disease"))
-      .withColumn(Constants.flatSpecies, functions.explode_outer($"species"))
-      .withColumn(Constants.flatOmicsType, functions.explode_outer($"omicsType"))
-      .withColumn(Constants.flatViewCount, functions.explode_outer($"viewCount"))
-      .withColumn(Constants.flatSearchCount, functions.explode_outer($"searchCount"))
-      .withColumn(Constants.flatReanalysisCount, functions.explode_outer($"reanalysisCount"))
-      .withColumn(Constants.flatCitationCount, functions.explode_outer($"citationCount"))
-      .withColumn(Constants.flatDownloadCount, functions.explode_outer($"downloadCount"))
-      .withColumn(Constants.flatViewCountNormalized, functions.explode_outer($"viewCountNormalized"))
-      .withColumn(Constants.flatSearchCountNormalized, functions.explode_outer($"searchCountNormalized"))
-      .withColumn(Constants.flatReanalysisCountNormalized, functions.explode_outer($"reanalysisCountNormalized"))
-      .withColumn(Constants.flatCitationCountNormalized, functions.explode_outer($"citationCountNormalized"))
-      .withColumn(Constants.flatDownloadCountNormalized, functions.explode_outer($"downloadCountNormalized"))*/
-
     val explodeDF = csvDf
       .withColumn(Constants.flatViewCount, functions.explode_outer($"viewCount"))
       .withColumn(Constants.flatSearchCount, functions.explode_outer($"searchCount"))
@@ -124,29 +71,12 @@ object SparkMongo {
       .withColumn(Constants.flatReanalysisCountNormalized, functions.explode_outer($"reanalysisCountNormalized"))
       .withColumn(Constants.flatCitationCountNormalized, functions.explode_outer($"citationCountNormalized"))
       .withColumn(Constants.flatDownloadCountNormalized, functions.explode_outer($"downloadCountNormalized"))
-
-    //explodeDF.take(10).foreach(dt => println(dt))
-
-    //println(explodeDF.count())
-    //df.select($"_id", $"addresses"(0)("street"), $"country"("name"))
-
-   /* commented latest on 25th November 2020
-      val domainCount = explodeDF.withColumn("tempColumn", split(explodeDF.col(Constants.flatDomain), "~")).
-      //withColumn($"tempColumn".getItem(0).toString() , $"tempColumn".getItem(1))
-      withColumn(Constants.finalDomain, $"tempColumn".getItem(0))
-      .withColumn(Constants.domainCount, $"tempColumn".getItem(1))
-
-    val finalDF = domainCount.drop("tempColumn", Constants.flatDomain, "searchDomain")*/
-
-    //finalDF.printSchema()
-
-    ///println("count of records is " + explodeDF.count())
+      .withColumn(Constants.flatOmicsType, functions.explode_outer($"omics_type"))
 
     explodeDF
   }
 
   def saveDataToFile(filePath:String, finalDF:DataFrame) {
-    //finalDF.take(10).foreach(dt => println(dt))
 
     import sqlContext.implicits._
 
@@ -184,29 +114,6 @@ object SparkMongo {
     MongoUpdates.getReanalysisMaxMinValue()
     MongoUpdates.getViewMaxMinValue()
     MongoUpdates.getDownloadMaxMinValue()
-    //val maxminMap = scala.collection.mutable.HashMap.empty[String,Double]
-    /*val maxminMap = Map(Constants.maxViewCount->MongoUpdates.objList.maxViewCount,
-      Constants.minViewCount-> MongoUpdates.objList.minViewCount,
-      Constants.maxReanalysisCount->MongoUpdates.objList.maxReanalysisCount,
-      Constants.minReanalysisCount-> MongoUpdates.objList.minReanalysisCount,
-      Constants.maxCitationCount->MongoUpdates.objList.maxCitationCount,
-      Constants.minCitationCount-> MongoUpdates.objList.minCitationCount,
-      Constants.maxDownloadCount->MongoUpdates.objList.maxDownloadCount,
-      Constants.minDownloadCount-> MongoUpdates.objList.minDownloadCount
-    )*/
-    println("accumulator values are " , SparkMongo.downloadmaxaccum.value, SparkMongo.citationmaxaccum.value, SparkMongo.viewmaxaccum.value, SparkMongo.reanalysismaxaccum.value)
-
-    //inputDf.show(2)
-
-    //MongoUpdates.getMaxFieldValue()
-    //print(inputDf.count())
-    //MongoUpdates.getSearchMaxMinValue()
-    /*MongoUpdates.getCitationMaxMinValue()
-    MongoUpdates.getReanalysisMaxMinValue()
-    MongoUpdates.getViewMaxMinValue()
-    MongoUpdates.getDownloadMaxMinValue()*/
-    //MongoUpdates.objList
-
 
     inputDf.rdd.map(dt => {
       MongoUpdates.normalize(dt, omicsDf);

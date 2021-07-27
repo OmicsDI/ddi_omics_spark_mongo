@@ -158,18 +158,6 @@ object MongoUpdates {
 
   def normalize(row:Row, omicsDF:mutable.HashMap[String,Double])  = {
 
-/*      val maxCitationCount = objList.maxCitationCount
-      val minCitationCount = objList.minCitationCount
-
-      val maxSearchCount = objList.maxSearchCount
-      val minSearchCount = objList.minSearchCount
-      val maxReanalysisCount = objList.maxReanalysisCount
-      val minReanalysisCount = objList.minReanalysisCount
-      val maxViewCount = objList.maxViewCount
-      val minViewCount = objList.minViewCount
-      val maxDownloadCount = objList.maxDownloadCount
-      val minDownloadCount = 0.0 */ //objList.minDownloadCount
-
       val maxCitationCount = SparkMongo.citationmaxaccum.value
       val minCitationCount = 0.0
       val maxReanalysisCount = SparkMongo.reanalysismaxaccum.value
@@ -184,7 +172,6 @@ object MongoUpdates {
       if(row.getValuesMap(Seq(Constants.flatReanalysisCount)).get(Constants.flatReanalysisCount).get != null) {
         reanalysisCountScaled = scaleFormula(maxReanalysisCount, minReanalysisCount, toInt(row.getAs(Constants.flatReanalysisCount)).toDouble)
       }
-
       val searchCountScaled = if(row.getValuesMap(Seq(Constants.flatSearchCount)).get(Constants.flatSearchCount).get != null) scaleConnections(row, omicsDF) else 0.0
       val viewCountScaled = if(row.getValuesMap(Seq(Constants.flatViewCount)).get(Constants.flatViewCount).get != null) scaleFormula(maxViewCount, minViewCount, toInt(row.getAs(Constants.flatViewCount)).toDouble) else 0.0
       var downloadCountScaled = if (row.getValuesMap(Seq(Constants.flatDownloadCount)).get(Constants.flatDownloadCount).get != null)  scaleFormula(maxDownloadCount.toDouble, minDownloadCount.toDouble, row.getAs(Constants.flatDownloadCount).toString.toDouble) else 0.0
@@ -225,44 +212,13 @@ object MongoUpdates {
         case dblist:BasicDBList => dblist.stream.toScala[Stream].map(_ match {
           case o: BasicDBObject => {
             if (SparkMongo.citationmaxaccum.value.equals(0.0) && o.containsField(Constants.maxCitationCount)) SparkMongo.citationmaxaccum.add(o.get(Constants.maxCitationCount).asInstanceOf[Int].toDouble)
-            //if (objList.minCitationCount.equals(0) && o.containsField(Constants.minCitationCount)) objList.minCitationCount = o.get(Constants.minCitationCount).asInstanceOf[Int]
-/*            if (SparkMongo.citationmaxaccum.value.equals(0) && o.containsField(Constants.maxSearchCount)) objList.maxSearchCount = o.get(Constants.maxSearchCount).asInstanceOf[Int]
-            if (objList.minSearchCount.equals(0) && o.containsField(Constants.minSearchCount)) objList.minSearchCount = o.get(Constants.minSearchCount).asInstanceOf[Int]*/
             if (SparkMongo.reanalysismaxaccum.value.equals(0.0) && o.containsField(Constants.maxReanalysisCount)) SparkMongo.reanalysismaxaccum.add(o.get(Constants.maxReanalysisCount).asInstanceOf[Double])
-            //if (objList.minReanalysisCount.equals(0) && o.containsField(Constants.minReanalysisCount)) objList.minReanalysisCount = toInt(o.get(Constants.minReanalysisCount).toString.replace(".0",""))
             if (SparkMongo.viewmaxaccum.value.equals(0.0) && o.containsField(Constants.maxViewCount)) SparkMongo.viewmaxaccum.add(o.get(Constants.maxViewCount).asInstanceOf[Double])
-            //if (objList.minViewCount.equals(0) && o.containsField(Constants.minViewCount)) objList.minViewCount = toInt(o.get(Constants.minViewCount).toString.replace(".0",""))
-//            if (objList.maxViewCount.equals(0) && o.containsField(Constants.maxViewCount)) objList.maxViewCount = o.get(Constants.maxViewCount).asInstanceOf[Int]
-//            if (objList.minViewCount.equals(0) && o.containsField(Constants.minViewCount)) objList.minViewCount = o.get(Constants.minViewCount).asInstanceOf[Int]
             if (SparkMongo.downloadmaxaccum.value.equals(0.0) && o.containsField(Constants.maxDownloadCount)) SparkMongo.downloadmaxaccum.add(o.get(Constants.maxDownloadCount).asInstanceOf[Double])
-            //if (objList.minDownloadCount.equals(0) && o.containsField(Constants.minDownloadCount)) objList.minDownloadCount = toInt(o.get(Constants.minDownloadCount).toString.toString.replace(".0",""))
           }
       })
     }
   }
-
-  /*def toList(dbObj: AnyRef) = {
-
-    println(dbObj)
-    dbObj match {
-        case dblist:BasicDBList => dblist.stream.toScala[Stream].map(_ match {
-          case o: BasicDBObject => {
-            if (objList.maxCitationCount.equals(0) && o.containsField(Constants.maxCitationCount)) objList.maxCitationCount = o.get(Constants.maxCitationCount).asInstanceOf[Int]
-            if (objList.minCitationCount.equals(0) && o.containsField(Constants.minCitationCount)) objList.minCitationCount = o.get(Constants.minCitationCount).asInstanceOf[Int]
-            if (objList.maxSearchCount.equals(0) && o.containsField(Constants.maxSearchCount)) objList.maxSearchCount = o.get(Constants.maxSearchCount).asInstanceOf[Int]
-            if (objList.minSearchCount.equals(0) && o.containsField(Constants.minSearchCount)) objList.minSearchCount = o.get(Constants.minSearchCount).asInstanceOf[Int]
-            if (objList.maxReanalysisCount.equals(0) && o.containsField(Constants.maxReanalysisCount)) objList.maxReanalysisCount = toInt(o.get(Constants.maxReanalysisCount).toString.replace(".0",""))
-            if (objList.minReanalysisCount.equals(0) && o.containsField(Constants.minReanalysisCount)) objList.minReanalysisCount = toInt(o.get(Constants.minReanalysisCount).toString.replace(".0",""))
-            if (objList.maxViewCount.equals(0) && o.containsField(Constants.maxViewCount)) objList.maxViewCount = toInt(o.get(Constants.maxViewCount).toString.replace(".0",""))
-            if (objList.minViewCount.equals(0) && o.containsField(Constants.minViewCount)) objList.minViewCount = toInt(o.get(Constants.minViewCount).toString.replace(".0",""))
-//            if (objList.maxViewCount.equals(0) && o.containsField(Constants.maxViewCount)) objList.maxViewCount = o.get(Constants.maxViewCount).asInstanceOf[Int]
-//            if (objList.minViewCount.equals(0) && o.containsField(Constants.minViewCount)) objList.minViewCount = o.get(Constants.minViewCount).asInstanceOf[Int]
-            if (objList.maxDownloadCount.equals(0) && o.containsField(Constants.maxDownloadCount)) objList.maxDownloadCount = toInt(o.get(Constants.maxDownloadCount).toString.replace(".0",""))
-            if (objList.minDownloadCount.equals(0) && o.containsField(Constants.minDownloadCount)) objList.minDownloadCount = toInt(o.get(Constants.minDownloadCount).toString.toString.replace(".0",""))
-          }
-      })
-    }
-  }*/
 
   def scaleFormula(max:Double, min:Double, currentValue:Double) :Double ={
         /*println("max value is " + max)
@@ -282,11 +238,8 @@ object MongoUpdates {
         val arr = row.getAs(Constants.omics_type).asInstanceOf[mutable.WrappedArray[String]].array
         if (arr.length > 0) arr.head else "Unknown"
       } else ""
-      //println("current value is" + searchCount)
-      //
-      // omicsDf
-      val data = omicsDf.getOrElse(omicsType, 0.000).toDouble
-      //val data = toInt(denominatorDF.filter(col("OmicsType").isin(omicsType)).first().get(1).toString)
+
+      val data = omicsDf.getOrElse(omicsType, 0.000)
 
       normalizedValue = if (searchCount >= data) 1.00 else searchCount/data
       //println("search value and normalized value is ", row.getAs(Constants.accession) , row.getAs(Constants.omics_type), normalizedValue, searchCount)
